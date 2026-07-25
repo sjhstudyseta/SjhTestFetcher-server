@@ -7,16 +7,14 @@ const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
 
 // config puppeteer
-const browser = await puppeteer.launch();
+const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
 const page = await browser.newPage();
 
 const mainPageURL = 'https://seoulsejong.sen.hs.kr';
 const loginURL = 'https://seoulsejong.sen.hs.kr/dggb/cmm/actionLogin.do';   // you can't go directly using this url. must use memberLoginForm() in mainpage.
 const testBankURL = 'https://seoulsejong.sen.hs.kr/41012/subMenu.do';
 
-async function main() {
-    await page.evaluate(() => console.log("aeou"));
-
+async function setup() {
     await goto(mainPageURL);
 
     if (!await login(userId, password)) {
@@ -26,16 +24,10 @@ async function main() {
     await goto(testBankURL);
 
     await injectFetcher();
-
-    let count = await getBoardListCount();
-    // await needsUpdate('27314400');
-    let fileData = await fetchFileDataAfter('27314367');
-
-    console.log(fileData.length);
 }
 
 async function goto(url) {
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: '30000' });
 }
 
 async function login(userId, password) {
@@ -109,5 +101,5 @@ function exportJSON(fileData) {
     return JSON.stringify(withMetaData, null, 2);
 }
 
-await main();
+await setup();
 await browser.close();
