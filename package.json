@@ -19,6 +19,7 @@
   "homepage": "https://github.com/sjhstudyseta/SjhTestFetcher-server#readme",
   "dependencies": {
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "puppeteer": "^25.3.0"
   }
 }

@@ -1,105 +1,96 @@
-import puppeteer, { Keyboard } from 'puppeteer';
 import { config } from 'dotenv';
+import express from 'express';
+import puppeteer from 'puppeteer';
+import * as fetcher from './puppeteer-functions.js';
 
 // config .env
 config({ quiet: true });
 const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
 
-// config puppeteer
-const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-const page = await browser.newPage();
+const app = express();
+const PORT = 3000;
 
-const mainPageURL = 'https://seoulsejong.sen.hs.kr';
-const loginURL = 'https://seoulsejong.sen.hs.kr/dggb/cmm/actionLogin.do';   // you can't go directly using this url. must use memberLoginForm() in mainpage.
-const testBankURL = 'https://seoulsejong.sen.hs.kr/41012/subMenu.do';
+app.get('/fetch', async (req, res) => {
+    const reqKey = req.headers['key'];
+    if (!authenticate(reqKey)) {
+        console.warn(`Invalid key. They tried: '${reqKey}' Time: ${new Date().toISOString()}`);
+        res.status(401).send(`Invalid key.`);
+        return;
+    }
+    
+    let browser;
+    try {
+        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']});
+        const page = await browser.newPage();
 
-async function setup() {
-    await goto(mainPageURL);
+        let countParam = req.query.count ? parseInt(req.query.count) : null;
+        let afterParam = req.query.after;
 
-    if (!await login(userId, password)) {
-        throw new Error('Failed to login! Recheck credentials please!');
+        await setup(page);
+
+        res.json(await fetch(page, countParam, afterParam));
+    } 
+    catch(err) {
+        console.error(err);
+        res.status(500).send(err.name);
+    } 
+    finally {
+        browser.close();
+    }
+});
+
+app.get('/', (req, res) => {
+  res.send('Fetcher active! Try GET /fetch');
+});
+ 
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+function authenticate(key) {
+    return key === process.env.KEY;
+}
+
+async function setup(page) {
+    await fetcher.goto(page, fetcher.mainPageURL);
+
+    if (!await fetcher.login(page, userId, password)) {
+        throw new Error(`Bad credentials! Contact owner please! Error time: ${new Date().toISOString()}`);
     }
 
-    await goto(testBankURL);
-
-    await injectFetcher();
+    await fetcher.goto(page, fetcher.testBankURL);
 }
 
-async function goto(url) {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: '30000' });
-}
+async function fetch(page, countParam, afterParam) {
+    let fileData = null;
+    
+    if (validNum(countParam) && !afterParam) {    // not null, null
+        fileData = await fetcher.fetchFileData(page, countParam);
+    } 
+    else if (afterParam) {   // null, not null
+        if (!await fetcher.needsUpdate(page, afterParam)) return 'Up to date.';
+        
+        fileData = await fetcher.fetchFileDataAfter(page, afterParam);
 
-async function login(userId, password) {
-    // navigate to login page and wait to load
-    await page.evaluate(() => memberLoginForm());    
-    await page.waitForSelector('.member_login_box');
-
-    // enter login info and confirm
-    await page.locator('#userId').fill(userId);
-    await page.locator('#password').fill(password);
-    await page.locator('.member_join').click();
-
-    await page.waitForNavigation();
-
-    return page.url != loginURL; // url when failed login
-}
-
-// injected script won't work if reloaded/site changes
-async function injectFetcher() {
-    await page.addScriptTag({ path: './fetcher.js' });
-}
-
-async function getBoardListCount() {
-    return await page.evaluate(() => getBoardListCount());
-}
-
-// use after injectFetcher()
-async function needsUpdate(latestNttId) {
-    return await page.evaluate(latestNttId => needsUpdate(latestNttId), latestNttId);
-}
-
-async function fetchFileData(count) {
-    return await page.evaluate(count => {
-        let boardListBody = getBoardListBody(count);
-        if (!boardListBody) return null;
-
-        let idList = parseToIdList(boardListBody);
-        if (!idList) return null;
-
-        return getFileDataFromIdList(idList);
-    }, count);
-}
-
-async function fetchFileDataAfter(nttId) {
-    return await page.evaluate(nttId => {
-        let wholeCount = getBoardListCount();
-        if (!wholeCount) return null;
-
-        let boardListBody = getBoardListBody(wholeCount);
-        if (!boardListBody) return null;
-
-        let idList = parseToIdList(boardListBody);
-        if (!idList) return null;
-
-        let idIndex = idList.findIndex(e => e.nttId === nttId);
-        idIndex = idIndex === -1 ? wholeCount : idIndex;
-
-        idList.splice(idIndex);
-
-        return getFileDataFromIdList(idList);
-    }, nttId);
-}
-
-function exportJSON(fileData) {
-    let withMetaData = { 
-        date: new Date().toISOString(),
-        latestNttId: fileData.length > 0 ? fileData[0].nttId : '',
-        data: fileData
+        if (validNum(countParam) && fileData) fileData.splice(countParam);  // not null, not null
+    } 
+    else {    // null, null
+        let count = await fetcher.getBoardListCount(page);
+        if (count) {
+            fileData = await fetcher.fetchFileData(page, count);
+        }
     }
-  
-    return JSON.stringify(withMetaData, null, 2);
+
+    if (!fileData) {
+        let date = new Date().toISOString();
+        console.error(`fileData is null. ${countParam}, ${afterParam} Error time: ${date}`)
+        throw new Error(`Fetching failed. Contact owner please! Error time: ${date}`);
+    }
+
+    return fetcher.exportJSON(fileData);
 }
 
-await setup();
-await browser.close();
+function validNum(any) {
+    return any !== null && !isNaN(any) && any >= 0; 
+}
