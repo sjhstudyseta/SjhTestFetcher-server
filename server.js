@@ -12,9 +12,9 @@ const app = express();
 const PORT = 3000;
 
 app.get('/fetch', async (req, res) => {
-    const reqKey = req.headers['key'];
-    if (!authenticate(reqKey)) {
-        console.warn(`Invalid key. They tried: '${reqKey}' Time: ${new Date().toISOString()}`);
+    const attemptKey = req.headers['key'];
+    if (!authenticate(attemptKey)) {
+        console.warn(`Invalid key. They tried: '${attemptKey}' Time: ${new Date().toISOString()}`);
         res.status(401).send(`Invalid key.`);
         return;
     }
@@ -29,14 +29,14 @@ app.get('/fetch', async (req, res) => {
 
         await setup(page);
 
-        res.json(await fetch(page, countParam, afterParam));
+        res.json(await fetchData(page, countParam, afterParam));
     } 
     catch(err) {
         console.error(err);
-        res.status(500).send(err.name);
+        res.status(500).send('Something went wrong... Contact owner please!');
     } 
     finally {
-        browser.close();
+        if (browser) await browser.close();
     }
 });
 
@@ -56,13 +56,13 @@ async function setup(page) {
     await fetcher.goto(page, fetcher.mainPageURL);
 
     if (!await fetcher.login(page, userId, password)) {
-        throw new Error(`Bad credentials! Contact owner please! Error time: ${new Date().toISOString()}`);
+        throw new Error(`Bad credentials! Error time: ${new Date().toISOString()}`);
     }
 
     await fetcher.goto(page, fetcher.testBankURL);
 }
 
-async function fetch(page, countParam, afterParam) {
+async function fetchData(page, countParam, afterParam) {
     let fileData = null;
     
     if (validNum(countParam) && !afterParam) {    // not null, null
@@ -85,7 +85,7 @@ async function fetch(page, countParam, afterParam) {
     if (!fileData) {
         let date = new Date().toISOString();
         console.error(`fileData is null. ${countParam}, ${afterParam} Error time: ${date}`)
-        throw new Error(`Fetching failed. Contact owner please! Error time: ${date}`);
+        throw new Error(`Fetching failed. Error time: ${date}`);
     }
 
     return fetcher.exportJSON(fileData);
