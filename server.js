@@ -84,8 +84,7 @@ async function fetchData(page, countParam, afterParam) {
 
     if (!fileData) {
         let date = new Date().toISOString();
-        console.error(`fileData is null. ${countParam}, ${afterParam} Error time: ${date}`)
-        throw new Error(`Fetching failed. Error time: ${date}`);
+        throw new Error(`fileData is null. ${countParam}, ${afterParam} Error time: ${date}`);
     }
 
     return fetcher.exportJSON(fileData);
