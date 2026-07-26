@@ -36,7 +36,11 @@ app.get('/fetch', async (req, res) => {
         res.status(500).send('Something went wrong... Contact owner please!');
     } 
     finally {
-        if (browser) await browser.close();
+        try {
+            if (browser) await browser.close();
+        } catch (err) {
+            console.error(err);
+        }
     }
 });
 
