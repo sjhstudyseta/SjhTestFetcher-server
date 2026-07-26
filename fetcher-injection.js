@@ -74,7 +74,7 @@ function getBoardDetail(bbsId, nttId) {
     }
   });
 
-  setIds('', ''); // reset ids
+//  setIds('', ''); // reset ids
 
   return body;
 }

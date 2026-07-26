@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.get('/fetch', async (req, res) => {
     const attemptKey = req.headers['key'];
     if (!authenticate(attemptKey)) {
-        console.warn(`Invalid key. They tried: '${attemptKey}' Time: ${new Date().toISOString()}`);
+        console.warn(`Invalid key. They tried: '${attemptKey}'`);
         res.status(401).send(`Invalid key.`);
         return;
     }
@@ -56,7 +56,7 @@ async function setup(page) {
     await fetcher.goto(page, fetcher.mainPageURL);
 
     if (!await fetcher.login(page, userId, password)) {
-        throw new Error(`Bad credentials! Error time: ${new Date().toISOString()}`);
+        throw new Error(`Bad credentials!`);
     }
 
     await fetcher.goto(page, fetcher.testBankURL);
@@ -83,8 +83,7 @@ async function fetchData(page, countParam, afterParam) {
     }
 
     if (!fileData) {
-        let date = new Date().toISOString();
-        throw new Error(`fileData is null. ${countParam}, ${afterParam} Error time: ${date}`);
+        throw new Error(`fileData is null. ${countParam}, ${afterParam}`);
     }
 
     return fetcher.exportJSON(fileData);
