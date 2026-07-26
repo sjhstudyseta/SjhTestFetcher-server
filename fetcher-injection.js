@@ -62,17 +62,17 @@ function getBoardDetail(bbsId, nttId) {
   setIds(bbsId, nttId);
 
   let body = null;
-  const parser = new DOMParser();
-  $.ajax({
-      type:'POST'
-    , url:'/dggb/module/board/selectBoardDetailAjax.do'
-    , cache : false
-    , async : false
-    , data:$("#boardFrm").serialize()
-    , success:function (data) {
-      body = parser.parseFromString(data, "text/html").body;
-    }
-  });
+  // const parser = new DOMParser();
+  // $.ajax({
+  //     type:'POST'
+  //   , url:'/dggb/module/board/selectBoardDetailAjax.do'
+  //   , cache : false
+  //   , async : false
+  //   , data:$("#boardFrm").serialize()
+  //   , success:function (data) {
+  //     body = parser.parseFromString(data, "text/html").body;
+  //   }
+  // });
 
 //  setIds('', ''); // reset ids
 
