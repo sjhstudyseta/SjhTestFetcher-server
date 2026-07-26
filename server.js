@@ -9,7 +9,7 @@ const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 app.get('/fetch', async (req, res) => {
     const attemptKey = req.headers['key'];
