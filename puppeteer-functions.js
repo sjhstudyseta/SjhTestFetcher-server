@@ -3,7 +3,7 @@ export const loginURL = 'https://seoulsejong.sen.hs.kr/dggb/cmm/actionLogin.do';
 export const testBankURL = 'https://seoulsejong.sen.hs.kr/41012/subMenu.do';
 
 export async function goto(page, url) {
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: '30000' });
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: '30000' });
 }
 
 export async function login(page, userId, password) {
