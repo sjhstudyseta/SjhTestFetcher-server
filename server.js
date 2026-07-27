@@ -20,9 +20,10 @@ app.get('/fetch', async (req, res) => {
     }
     
     let browser;
+    let page;
     try {
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']});
-        const page = await browser.newPage();
+        page = await browser.newPage();
 
         let countParam = req.query.count ? parseInt(req.query.count) : null;
         let afterParam = req.query.after;
@@ -37,6 +38,7 @@ app.get('/fetch', async (req, res) => {
     } 
     finally {
         try {
+            if (page) await page.close();
             if (browser) await browser.close();
         } catch (err) {
             console.error(err);

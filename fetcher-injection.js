@@ -59,6 +59,7 @@ async function needsUpdate(latestNttId) {
 }
 
 async function getBoardDetail(bbsId, nttId) {
+  await new Promise(r => setTimeout(r, 100));
   setIds(bbsId, nttId);
 
   let body = null;
