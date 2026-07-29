@@ -22,7 +22,7 @@ app.get('/fetch', async (req, res) => {
     let browser;
     let page;
     try {
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox']});
+        browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ['--no-sandbox', '--disable-setuid-sandbox']});
         page = await browser.newPage();
 
         let countParam = req.query.count ? parseInt(req.query.count) : null;
