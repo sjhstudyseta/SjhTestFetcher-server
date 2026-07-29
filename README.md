@@ -11,6 +11,7 @@
 * `curl -H "key:CORRECT_KEY" "https://sjhtestfetcher-server.onrender.com/fetch?count=1&after=27314400` (1 entry after nttId 27314400)
 
 ## Possible Responses
-* `401: Invalid Key.`: key was wrong.
-* `500: Something went wrong... Contact owner please!`: Something failed.
+* `401: Invalid Key. Don't you dare try to mess with me!`: key was wrong.
+* `429: Someone's using me! Try a bit later.`: service is running. (can't run multiple at once)
+* `500: Something went bad... Contact owner please!`: Something failed.
 * `200: Up to date.`: no entries were found after nttId.
