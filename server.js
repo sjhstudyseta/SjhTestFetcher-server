@@ -11,16 +11,25 @@ const password = process.env.PASSWORD;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+let isRunning = false;
+
 app.get('/fetch', async (req, res) => {
     const attemptKey = req.headers['key'];
     if (!authenticate(attemptKey)) {
         console.warn(`Invalid key. They tried: '${attemptKey}'`);
-        res.status(401).send(`Invalid key.`);
+        res.status(401).send("Invalid key. Don't you dare try to mess with me!");
         return;
     }
     
+    if (isRunning) {
+        res.status(429).send("Someone's using me! Try a bit later");
+    }
+
+    isRunning = true;
+
     let browser;
     let page;
+
     try {
         browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ['--no-sandbox', '--disable-setuid-sandbox']});
         page = await browser.newPage();
@@ -34,15 +43,18 @@ app.get('/fetch', async (req, res) => {
     } 
     catch(err) {
         console.error(err);
-        res.status(500).send('Something went wrong... Contact owner please!');
+        res.status(500).send('Something went bad... Contact owner please!');
     } 
     finally {
         try {
             if (page) await page.close();
             if (browser) await browser.close();
-        } catch (err) {
+        } 
+        catch (err) {
             console.error(err);
         }
+
+        isRunning = false;
     }
 });
 
