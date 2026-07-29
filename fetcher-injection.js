@@ -1,13 +1,11 @@
 async function getBoardListBody(count) {
-	document.getElementById('customRecordCountPerPage').value = count;
-
   let body = null;
   await $.ajax({  // ajax statement from selectBoardDetailAjax.do, list_btn
     type:'POST'
     , url:'/dggb/module/board/selectBoardListAjax.do'
     , cache : false
     , async : true
-    , data:$("#boardFrm").serialize()
+    , data: `bbsId=BBS_0000000000090317&bbsTyCode=base&customRecordCountPerPage=${count}&cmntSe=N`  // modified raw payload
     , success:function (data) {
         const parser = new DOMParser();
         body = parser.parseFromString(data, "text/html").body;
@@ -58,17 +56,14 @@ async function needsUpdate(latestNttId) {
   return id[0].nttId != latestNttId;
 }
 
-async function getBoardDetail(bbsId, nttId) {
-  await new Promise(r => setTimeout(r, 100));
-  setIds(bbsId, nttId);
-
+async function getBoardDetail(nttId) {
   let body = null;
   await $.ajax({
     type:'POST'
   , url:'/dggb/module/board/selectBoardDetailAjax.do'
   , cache : false
   , async : true
-  , data:$("#boardFrm").serialize()
+  , data: `bbsId=BBS_0000000000090317&bbsTyCode=base&cmntSe=N&nttId=${nttId}` // modified raw payload, bbsId is constant
   , success:function (data) {
       const parser = new DOMParser();
       body = parser.parseFromString(data, "text/html").body;
@@ -76,11 +71,6 @@ async function getBoardDetail(bbsId, nttId) {
   });
 
   return body;
-}
-
-function setIds(bbsId, nttId) {
-  document.getElementById('bbsId').value = bbsId;
-  document.getElementById('nttId').value = nttId;
 }
 
 function parseBoardDetailTitle(boardDetail) {
@@ -133,7 +123,7 @@ async function getFileDataFromIdList(idList) {
   let fileData = [];
 
   for (const id of idList) {
-    let detail = await getBoardDetail(id.bbsId, id.nttId);
+    let detail = await getBoardDetail(id.nttId);
 
     fileData.push({
       nttId: id.nttId,
