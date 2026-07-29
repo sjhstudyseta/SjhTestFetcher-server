@@ -23,9 +23,11 @@ app.get('/fetch', async (req, res) => {
     
     if (isRunning) {
         res.status(429).send("Someone's using me! Try a bit later");
+        return;
     }
 
     isRunning = true;
+    console.log(`Request recieved: ${req.url}`);
 
     let browser;
     let page;
