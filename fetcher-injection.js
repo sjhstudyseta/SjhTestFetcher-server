@@ -1,15 +1,13 @@
-function getBoardListBody(count) {
-	document.getElementById('customRecordCountPerPage').value = count;
-
+async function getBoardListBody(count) {
   let body = null;
-	const parser = new DOMParser();
-  $.ajax({  // ajax statement from selectBoardDetailAjax.do, list_btn
+  await $.ajax({  // ajax statement from selectBoardDetailAjax.do, list_btn
     type:'POST'
     , url:'/dggb/module/board/selectBoardListAjax.do'
     , cache : false
-    , async : false
-    , data:$("#boardFrm").serialize()
+    , async : true
+    , data: `bbsId=BBS_0000000000090317&bbsTyCode=base&customRecordCountPerPage=${count}&cmntSe=N`  // modified raw payload
     , success:function (data) {
+        const parser = new DOMParser();
         body = parser.parseFromString(data, "text/html").body;
       }
   });
@@ -17,8 +15,8 @@ function getBoardListBody(count) {
   return body;
 }
 
-function getBoardListCount() {
-  let boardList = getBoardListBody(0);
+async function getBoardListCount() {
+  let boardList = await getBoardListBody(0);
   if (!boardList) return null;
 
   let totalElement = boardList.getElementsByClassName('total')[0];
@@ -48,8 +46,8 @@ function parseToIdList(boardListBody) {
   return idList;
 }
 
-function needsUpdate(latestNttId) {
-  let boardListBody = getBoardListBody(1);
+async function needsUpdate(latestNttId) {
+  let boardListBody = await getBoardListBody(1);
   if (!boardListBody) return true;
 
   let id = parseToIdList(boardListBody);
@@ -58,30 +56,21 @@ function needsUpdate(latestNttId) {
   return id[0].nttId != latestNttId;
 }
 
-function getBoardDetail(bbsId, nttId) {
-  setIds(bbsId, nttId);
-
+async function getBoardDetail(nttId) {
   let body = null;
-  const parser = new DOMParser();
-  $.ajax({
-      type:'POST'
-    , url:'/dggb/module/board/selectBoardDetailAjax.do'
-    , cache : false
-    , async : false
-    , data:$("#boardFrm").serialize()
-    , success:function (data) {
+  await $.ajax({
+    type:'POST'
+  , url:'/dggb/module/board/selectBoardDetailAjax.do'
+  , cache : false
+  , async : true
+  , data: `bbsId=BBS_0000000000090317&bbsTyCode=base&cmntSe=N&nttId=${nttId}` // modified raw payload, bbsId is constant
+  , success:function (data) {
+      const parser = new DOMParser();
       body = parser.parseFromString(data, "text/html").body;
     }
   });
 
-//  setIds('', ''); // reset ids
-
   return body;
-}
-
-function setIds(bbsId, nttId) { // keep ajax calls synchronous! else this might not work
-  document.getElementById('bbsId').value = bbsId;
-  document.getElementById('nttId').value = nttId;
 }
 
 function parseBoardDetailTitle(boardDetail) {
@@ -130,14 +119,18 @@ function createDownloadURL(file) {
   return `https://seoulsejong.sen.hs.kr/dggb/cnvrFileDown.do?atchFileId=${file.atchFileId}:${file.fileSn}`;
 }
 
-function getFileDataFromIdList(idList) {
-  return idList.map(id => {
-    let detail = getBoardDetail(id.bbsId, id.nttId);
+async function getFileDataFromIdList(idList) {
+  let fileData = [];
 
-    return {
+  for (const id of idList) {
+    let detail = await getBoardDetail(id.nttId);
+
+    fileData.push({
       nttId: id.nttId,
       title: detail ? parseBoardDetailTitle(detail) : null,
       files: detail ? parseBoardDetailFiles(detail).map(f => { return {name: f.name, url: createDownloadURL(f)} }) : null
-    }
-  });
+    });
+  }
+
+  return fileData;
 }

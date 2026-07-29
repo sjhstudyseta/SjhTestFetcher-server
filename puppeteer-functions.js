@@ -31,13 +31,13 @@ export async function injectFetcher(page) {
 export async function getBoardListCount(page) {
     await injectFetcher(page);
 
-    return await page.evaluate(() => getBoardListCount());
+    return await page.evaluate(async() => await getBoardListCount());
 }
 
 export async function needsUpdate(page, latestNttId) {
     await injectFetcher(page);
 
-    return await page.evaluate(latestNttId => needsUpdate(latestNttId), latestNttId);
+    return await page.evaluate(async latestNttId => await needsUpdate(latestNttId), latestNttId);
 }
 
 export async function fetchFileData(page, count) {
@@ -45,8 +45,8 @@ export async function fetchFileData(page, count) {
     
     await injectFetcher(page);
 
-    return await page.evaluate(count => {
-        let boardListBody = getBoardListBody(count);
+    return await page.evaluate(async count => {
+        let boardListBody = await getBoardListBody(count);
         if (!boardListBody) return null;
 
         let idList = parseToIdList(boardListBody);
@@ -54,18 +54,18 @@ export async function fetchFileData(page, count) {
 
         idList.splice(count);   // if count < 10 then idList length = 10
 
-        return getFileDataFromIdList(idList);
+        return await getFileDataFromIdList(idList);
     }, count);
 }
 
 export async function fetchFileDataAfter(page, nttId) {
     await injectFetcher(page);
 
-    return await page.evaluate(nttId => {
-        let wholeCount = getBoardListCount();
+    return await page.evaluate(async nttId => {
+        let wholeCount = await getBoardListCount();
         if (!wholeCount) return null;
 
-        let boardListBody = getBoardListBody(wholeCount);
+        let boardListBody = await getBoardListBody(wholeCount);
         if (!boardListBody) return null;
 
         let idList = parseToIdList(boardListBody);
@@ -76,7 +76,7 @@ export async function fetchFileDataAfter(page, nttId) {
 
         idList.splice(idIndex);
 
-        return getFileDataFromIdList(idList);
+        return await getFileDataFromIdList(idList);
     }, nttId);
 }
 
