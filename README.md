@@ -13,5 +13,5 @@
 ## Possible Responses
 * `401: Invalid Key. Don't you dare try to mess with me!`: key was wrong.
 * `429: Someone's using me! Try a bit later.`: service is running. (can't run multiple at once)
-* `500: Something went bad... Contact owner please!`: Something failed.
+* `500: I'm sorry. Something went wrong. Please contact us.`: Something failed.
 * `200: Up to date.`: no entries were found after nttId.

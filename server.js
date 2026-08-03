@@ -24,7 +24,7 @@ app.get('/fetch', async(req, res) => {
   }
 
   if (isRunning) {
-    res.status(429).send("Someone's using me. Try a bit later.");
+    res.status(429).send("Someone's using me! Try a bit later.");
     return;
   }
 
