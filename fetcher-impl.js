@@ -54,11 +54,9 @@ export async function fetchFileDataAfter(cookieStr, latestNttId, count = null) {
 }
 
 export function exportJSON(fileData) {
-    let withMetaData = {
+    return JSON.stringify({
         date: new Date().toISOString(),
         latestNttId: fileData.length > 0 ? fileData[0].nttId : '',
         data: fileData
-    }
-
-    return JSON.stringify(withMetaData, null, 2);
+    }, null, 2);
 }

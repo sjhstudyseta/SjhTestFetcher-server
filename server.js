@@ -8,46 +8,58 @@ config({ quiet: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let isRunning = false;
+const isRunning = {
+  priority: false,
+  default: false,
+  
+  get state() {
+    return this.default || this.priority;
+  },
+  update: (isAuthenticated, value) => {
+    if (isAuthenticated) isRunning.priority = value;
+    else isRunning.default = value;
+  }
+};
 
 app.get('/fetch', async(req, res) => {
   const attemptKey = req.headers['key'];
+  const isAuthenticated = authenticate(attemptKey);
   const countParam = req.query.count ? parseInt(req.query.count) : null;
   const afterParam = req.query.after;
 
-  console.log(`${req.url} recieved`);
+  console.log(`${req.url}, attempted: ${attemptKey}`);
 
-  if (!authenticate(attemptKey)) {
-    console.warn(`Bad attempt. They tried: ${attemptKey}`)
-    res.status(401).send("Invalid key. Don't you dare try to mess with me!");
-    return;
-  }
-
-  if (isRunning) {
+  if (isRunning.state && !isAuthenticated) {
     res.status(429).send("Someone's using me! Try a bit later.");
     return;
   }
 
-  isRunning = true;
+  isRunning.update(isAuthenticated, true);
 
   try {
     const cookieStr = await fetcherImpl.setup(process.env.USER_ID, process.env.PASSWORD);
     const fileData = await fetchData(cookieStr, countParam, afterParam);
-    res.json(fetcherImpl.exportJSON(fileData));
+    
+    if (!isAuthenticated && isRunning.priority) {
+      res.status(409).json(getResponse(fileData));  // when interupted, data may be missing.
+    }
+    else {
+      res.status(200).json(getResponse(fileData));
+    }
   }
   catch (err) {
     console.error(err);
     res.status(500).send("I'm sorry. Something went wrong. Please contact us.")
   }
   finally {
-    isRunning = false;
+    isRunning.update(isAuthenticated, false);
   }
 });
 
 app.get('/', (req, res) => {
   res.send('Fetcher active! Try GET /fetch');
 });
- 
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
@@ -57,12 +69,12 @@ async function fetchData(cookieStr, countParam, afterParam) {
 
   if (validNum(countParam) && !afterParam) { // not null, null
     fileData = await fetcherImpl.fetchFileData(cookieStr, countParam);
-  } 
+  }
   else if (!validNum(countParam) && afterParam) { // null, not null
     if (!await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
 
     fileData = await fetcherImpl.fetchFileDataAfter(cookieStr, afterParam);
-  } 
+  }
   else if (validNum(countParam) && afterParam) {  // not null, not null
     if (!await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
 
@@ -81,9 +93,19 @@ async function fetchData(cookieStr, countParam, afterParam) {
 }
 
 function validNum(any) {
-  return any !== null && !isNaN(any) && any >= 0; 
+  return any !== null && !isNaN(any) && any >= 0;
 }
 
 function authenticate(key) {
   return key === process.env.KEY;
+}
+
+function getResponse(data) {
+  if (typeof data === 'string') {
+    return JSON.stringify({
+      date: new Date().toISOString(),
+      latestNttId: data
+    }, null, 2);
+  }
+  else return fetcherImpl.exportJSON(data);
 }
