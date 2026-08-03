@@ -1,26 +1,24 @@
 {
   "name": "sjhtestfetcher-server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
-  "type": "module",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npx puppeteer browsers install chrome"
+  "version": "1.1.0",
+  "description": "`curl -H \"key:CORRECT_KEY\" \"https://sjhtestfetcher-server.onrender.com/fetch` ## Queries * `count`: amount of entries to get * `after`: get entries after nttId",
+  "homepage": "https://github.com/sjhstudyseta/SjhTestFetcher-server#readme",
+  "bugs": {
+    "url": "https://github.com/sjhstudyseta/SjhTestFetcher-server/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sjhstudyseta/SjhTestFetcher-server.git"
   },
-  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/sjhstudyseta/SjhTestFetcher-server/issues"
+  "author": "",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "test": "node server.js"
   },
-  "homepage": "https://github.com/sjhstudyseta/SjhTestFetcher-server#readme",
   "dependencies": {
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "puppeteer": "^25.3.0"
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2"
   }
 }
