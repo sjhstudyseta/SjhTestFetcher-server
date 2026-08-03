@@ -1,63 +1,47 @@
 import { config } from 'dotenv';
 import express from 'express';
-import puppeteer from 'puppeteer';
-import * as fetcher from './puppeteer-functions.js';
+import * as fetcherImpl from './fetcher-impl.js';
 
 // config .env
 config({ quiet: true });
-const userId = process.env.USER_ID;
-const password = process.env.PASSWORD;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 let isRunning = false;
 
-app.get('/fetch', async (req, res) => {
-    const attemptKey = req.headers['key'];
-    if (!authenticate(attemptKey)) {
-        console.warn(`Invalid key. They tried: '${attemptKey}'`);
-        res.status(401).send("Invalid key. Don't you dare try to mess with me!");
-        return;
-    }
-    
-    if (isRunning) {
-        res.status(429).send("Someone's using me! Try a bit later.");
-        return;
-    }
+app.get('/fetch', async(req, res) => {
+  const attemptKey = req.headers['key'];
+  const countParam = req.query.count ? parseInt(req.query.count) : null;
+  const afterParam = req.query.after;
 
-    isRunning = true;
-    console.log(`Request recieved: ${req.url}`);
+  console.log(`${req.url} recieved`);
 
-    let browser;
-    let page;
+  if (!authenticate(attemptKey)) {
+    console.warn(`Bad attempt. They tried: ${attemptKey}`)
+    res.status(401).send("Invalid key. Don't you dare try to mess with me!");
+    return;
+  }
 
-    try {
-        browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ['--no-sandbox', '--disable-setuid-sandbox']});
-        page = await browser.newPage();
+  if (isRunning) {
+    res.status(429).send("Someone's using me! Try a bit later.");
+    return;
+  }
 
-        let countParam = req.query.count ? parseInt(req.query.count) : null;
-        let afterParam = req.query.after;
+  isRunning = true;
 
-        await setup(page);
-
-        res.json(await fetchData(page, countParam, afterParam));
-    } 
-    catch(err) {
-        console.error(err);
-        res.status(500).send('Something went bad... Contact owner please!');
-    } 
-    finally {
-        try {
-            if (page) await page.close();
-            if (browser) await browser.close();
-        } 
-        catch (err) {
-            console.error(err);
-        }
-
-        isRunning = false;
-    }
+  try {
+    const cookieStr = await fetcherImpl.setup(process.env.USER_ID, process.env.PASSWORD);
+    const fileData = await fetchData(cookieStr, countParam, afterParam);
+    res.json(fetcherImpl.exportJSON(fileData));
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).send("I'm sorry. Something went wrong. Please contact us.")
+  }
+  finally {
+    isRunning = false;
+  }
 });
 
 app.get('/', (req, res) => {
@@ -68,47 +52,38 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
 
-function authenticate(key) {
-    return key === process.env.KEY;
-}
+async function fetchData(cookieStr, countParam, afterParam) {
+  let fileData = null;
 
-async function setup(page) {
-    await fetcher.goto(page, fetcher.mainPageURL);
+  if (validNum(countParam) && !afterParam) { // not null, null
+    fileData = await fetcherImpl.fetchFileData(cookieStr, countParam);
+  } 
+  else if (!validNum(countParam) && afterParam) { // null, not null
+    if (!await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
 
-    if (!await fetcher.login(page, userId, password)) {
-        throw new Error(`Bad credentials!`);
-    }
+    fileData = await fetcherImpl.fetchFileDataAfter(cookieStr, afterParam);
+  } 
+  else if (validNum(countParam) && afterParam) {  // not null, not null
+    if (!await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
 
-    await fetcher.goto(page, fetcher.testBankURL);
-}
+    fileData = await fetcherImpl.fetchFileDataAfter(cookieStr, afterParam, countParam);
+  }
+  else { // null, null
+    let count = await fetcherImpl.getBoardListCount(cookieStr);
+    fileData = count ? await fetcherImpl.fetchFileData(cookieStr, count) : null;
+  }
 
-async function fetchData(page, countParam, afterParam) {
-    let fileData = null;
-    
-    if (validNum(countParam) && !afterParam) {    // not null, null
-        fileData = await fetcher.fetchFileData(page, countParam);
-    } 
-    else if (afterParam) {   // null, not null
-        if (!await fetcher.needsUpdate(page, afterParam)) return 'Up to date.';
-        
-        fileData = await fetcher.fetchFileDataAfter(page, afterParam);
+  if (!fileData) {
+    throw new Error(`fileData is null. ${countParam}, ${afterParam}`);
+  }
 
-        if (validNum(countParam) && fileData) fileData.splice(countParam);  // not null, not null
-    } 
-    else {    // null, null
-        let count = await fetcher.getBoardListCount(page);
-        if (count) {
-            fileData = await fetcher.fetchFileData(page, count);
-        }
-    }
-
-    if (!fileData) {
-        throw new Error(`fileData is null. ${countParam}, ${afterParam}`);
-    }
-
-    return fetcher.exportJSON(fileData);
+  return fileData;
 }
 
 function validNum(any) {
-    return any !== null && !isNaN(any) && any >= 0; 
+  return any !== null && !isNaN(any) && any >= 0; 
+}
+
+function authenticate(key) {
+  return key === process.env.KEY;
 }
