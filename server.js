@@ -10,12 +10,11 @@ const password = process.env.PASSWORD;
 const cookieStr = await fetcherImpl.setup(userId, password);
 
 const fileData1 = await fetchData(cookieStr, null, '27314308');
-// const fileData2 = await fetchData(cookieStr, 3, null);
-// const fileData3 = await fetchData(cookieStr, 1, '27314308');
-// const fileData4 = await fetchData(cookieStr, null, null);
-// const fileData5 = await fetchData(cookieStr, 12, '12312311123');
-// const fileData6 = await fetchData(cookieStr, null, '13978726');
-console.log(fileData1);
+const fileData2 = await fetchData(cookieStr, 3, null);
+const fileData3 = await fetchData(cookieStr, 1, '27314308');
+const fileData4 = await fetchData(cookieStr, null, null);
+const fileData5 = await fetchData(cookieStr, 12, '12312311123');
+const fileData6 = await fetchData(cookieStr, null, '13978726');
 
 
 
