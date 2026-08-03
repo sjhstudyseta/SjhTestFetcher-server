@@ -30,11 +30,11 @@ async function fetchIdList(cookieStr, count) {
 
     const idList = fetcher.parseToIdList($boardList);
 
-    return idList.splice(count);
+    return idList.toSpliced(count);
 }
 
 export async function fetchFileData(cookieStr, count) {
-    const idList = fetchIdList(cookieStr, count);
+    const idList = await fetchIdList(cookieStr, count);
 
     return await fetcher.getFileDataFromIdList(cookieStr, idList);
 }
@@ -43,9 +43,9 @@ export async function fetchFileDataAfter(cookieStr, latestNttId, count = null) {
     count = count ?? await fetcher.getBoardListCount(cookieStr);
     if (count === null) throw new Error('Failed to get boardListCount! Session expired or total unparsable.');
 
-    const idList = fetchIdList(cookieStr, count);
+    const idList = await fetchIdList(cookieStr, count);
 
-    let idIndex = idList.findIndex(e => e === latestNttId);
+    let idIndex = idList.findIndex(id => id === latestNttId);
     idIndex = idIndex === -1 ? count : idIndex;
 
     idList.splice(idIndex);
