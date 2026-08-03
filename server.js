@@ -1,22 +1,56 @@
-import { config } from 'dotenv'
+import { config } from 'dotenv';
+import express from 'express';
 import * as fetcherImpl from './fetcher-impl.js';
 
 // config .env
 config({ quiet: true });
-const userId = process.env.USER_ID;
-const password = process.env.PASSWORD;
 
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const cookieStr = await fetcherImpl.setup(userId, password);
+let isRunning = false;
 
-const fileData1 = await fetchData(cookieStr, null, '27314308');
-const fileData2 = await fetchData(cookieStr, 3, null);
-const fileData3 = await fetchData(cookieStr, 1, '27314308');
-const fileData4 = await fetchData(cookieStr, null, null);
-const fileData5 = await fetchData(cookieStr, 12, '12312311123');
-const fileData6 = await fetchData(cookieStr, null, '13978726');
+app.get('/fetch', async(req, res) => {
+  const attemptKey = req.headers['key'];
+  const countParam = req.query.count ? parseInt(req.query.count) : null;
+  const afterParam = req.query.after;
 
+  console.log(`${req.url} recieved`);
 
+  if (!authenticate(attemptKey)) {
+    console.warn(`Bad attempt. They tried: ${attemptKey}`)
+    res.status(401).send("Invalid key. Don't you dare try to mess with me!");
+    return;
+  }
+
+  if (isRunning) {
+    res.status(429).send("Someone's using me. Try a bit later.");
+    return;
+  }
+
+  isRunning = true;
+
+  try {
+    const cookieStr = await fetcherImpl.setup(process.env.USER_ID, process.env.PASSWORD);
+    const fileData = await fetchData(cookieStr, countParam, afterParam);
+    res.json(fetcherImpl.exportJSON(fileData));
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).send("I'm sorry. Something went wrong. Please contact us.")
+  }
+  finally {
+    isRunning = false;
+  }
+});
+
+app.get('/', (req, res) => {
+  res.send('Fetcher active! Try GET /fetch');
+});
+ 
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
 
 async function fetchData(cookieStr, countParam, afterParam) {
   let fileData = null;
@@ -30,7 +64,7 @@ async function fetchData(cookieStr, countParam, afterParam) {
     fileData = await fetcherImpl.fetchFileDataAfter(cookieStr, afterParam);
   } 
   else if (validNum(countParam) && afterParam) {  // not null, not null
-    if (countParam == 0 || !await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
+    if (!await fetcherImpl.needsUpdate(cookieStr, afterParam)) return 'Up to date.';
 
     fileData = await fetcherImpl.fetchFileDataAfter(cookieStr, afterParam, countParam);
   }
@@ -43,9 +77,13 @@ async function fetchData(cookieStr, countParam, afterParam) {
     throw new Error(`fileData is null. ${countParam}, ${afterParam}`);
   }
 
-  return fetcherImpl.exportJSON(fileData);
+  return fileData;
 }
 
 function validNum(any) {
   return any !== null && !isNaN(any) && any >= 0; 
+}
+
+function authenticate(key) {
+  return key === process.env.KEY;
 }
