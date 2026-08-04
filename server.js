@@ -11,15 +11,14 @@ const PORT = process.env.PORT || 3000;
 const isRunning = {
   priority: false,
   default: false,
-  
-  get state() {
-    return this.default || this.priority;
-  },
+
   update: (isAuthenticated, value) => {
     if (isAuthenticated) isRunning.priority = value;
     else isRunning.default = value;
   }
 };
+
+let cookieStr = null;
 
 app.get('/fetch', async(req, res) => {
   const attemptKey = req.headers['key'];
@@ -29,7 +28,7 @@ app.get('/fetch', async(req, res) => {
 
   console.log(`${req.url}, attempted: ${attemptKey}`);
 
-  if (isRunning.state && !isAuthenticated) {
+  if ((isRunning.default || isRunning.priority) && !isAuthenticated) {  // priority infinite chaining
     res.status(429).send("Someone's using me! Try a bit later.");
     return;
   }
@@ -37,21 +36,20 @@ app.get('/fetch', async(req, res) => {
   isRunning.update(isAuthenticated, true);
 
   try {
-    const cookieStr = await fetcherImpl.setup(process.env.USER_ID, process.env.PASSWORD);
+    cookieStr = !cookieStr ? await fetcherImpl.setup(process.env.USER_ID, process.env.PASSWORD) : cookieStr;
     const fileData = await fetchData(cookieStr, countParam, afterParam);
-    
-    if (!isAuthenticated && isRunning.priority) {
-      res.status(409).json(getResponse(fileData));  // when interupted, data may be missing.
-    }
-    else {
-      res.status(200).json(getResponse(fileData));
-    }
+
+    res.json(getResponse(fileData));
   }
   catch (err) {
     console.error(err);
     res.status(500).send("I'm sorry. Something went wrong. Please contact us.")
   }
   finally {
+    if (isAuthenticated ? !isRunning.default : !isRunning.priority) {
+      cookieStr = null;
+    }
+
     isRunning.update(isAuthenticated, false);
   }
 });
