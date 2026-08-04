@@ -16,7 +16,6 @@
 ## 응답 예시
 * `429: Someone's using me! Try a bit later.`: 누군가 서비스를 쓰고 있음. (동시에 여러명 사용 불가)
 * `500: I'm sorry. Something went wrong. Please contact us.`: 뭔가 잘못됨.
-* `409`: 작업이 겹치면 먼저 시작한 것의 데이터가 불완전 할 수 있음. 데이터가 그대로 보내지는 대신 코드 409로 구별해야 함.
 * 다른 응답은 json 형식:
 
 ```json
