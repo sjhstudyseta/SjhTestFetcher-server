@@ -50,7 +50,10 @@ export async function fetchFileDataAfter(cookieStr, latestNttId, count = null) {
 
     idList.splice(idIndex);
 
-    return await fetcher.getFileDataFromIdList(cookieStr, idList);
+    const fileData = await fetcher.getFileDataFromIdList(cookieStr, idList);
+    if (!fileData) throw new Error('Failed to get boardDetail! Session expired.');
+
+    return fileData;
 }
 
 export function exportJSON(fileData) {

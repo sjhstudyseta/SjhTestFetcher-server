@@ -28,8 +28,8 @@ app.get('/fetch', async(req, res) => {
 
   console.log(`${req.url}, attempted: ${attemptKey}`);
 
-  if ((isRunning.default || isRunning.priority) && !isAuthenticated) {  // priority infinite chaining
-    res.status(429).send("Someone's using me! Try a bit later.");
+  if ((isRunning.default || isRunning.priority) && !isAuthenticated) {
+    res.status(429).send("Someone's using me! Try a bit later. (Or try again if on browser)");
     return;
   }
 
@@ -42,6 +42,7 @@ app.get('/fetch', async(req, res) => {
     res.json(getResponse(fileData));
   }
   catch (err) {
+    cookieStr = null; // prevent priority infinite chaining
     console.error(err);
     res.status(500).send("I'm sorry. Something went wrong. Please contact us.")
   }

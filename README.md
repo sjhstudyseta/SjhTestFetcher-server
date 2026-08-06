@@ -14,7 +14,7 @@
 * [`curl "https://sjhtestfetcher-server.onrender.com/fetch?count=1&after=27314308`](https://sjhtestfetcher-server.onrender.com/fetch?count=1&after=27314308) (nttId 27314308 이후 시험들중 가장 최근 것 1개 가져오기)
 
 ## 응답
-* `429: Someone's using me! Try a bit later.`: 누군가 서비스를 쓰고 있음. (동시에 여러명 사용 불가, 한 번 실행시 최대 5분 소요)
+* `429: Someone's using me! Try a bit later. (Or try again if on browser)`: 누군가 서비스를 쓰고 있음. (동시에 여러명 사용 불가, 한 번 실행시 최대 5분 소요)
 * `500: I'm sorry. Something went wrong. Please contact us.`: 뭔가 잘못됨.
 * 다른 응답은 json 형식:
 

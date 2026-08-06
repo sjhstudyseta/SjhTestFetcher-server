@@ -197,6 +197,7 @@ export async function getFileDataFromIdList(cookieStr, idList) {
 
     for (const nttId of idList) {
         let $detail = await getBoardDetail(cookieStr, nttId);
+        if (!$detail) return null;
 
         fileData.push({
             nttId: nttId,
