@@ -5,6 +5,7 @@ const loginURL = "https://seoulsejong.sen.hs.kr/dggb/cmm/actionLogin.do";
 const subMenuURL = "https://seoulsejong.sen.hs.kr/41012/subMenu.do";
 const boardListURL = "https://seoulsejong.sen.hs.kr/dggb/module/board/selectBoardListAjax.do";
 const boardDetailURL = "https://seoulsejong.sen.hs.kr/dggb/module/board/selectBoardDetailAjax.do";
+const fileDownloadURL = (file: File) => `https://seoulsejong.sen.hs.kr/dggb/cnvrFileDown.do?atchFileId=${file.atchFileId}:${file.fileSn}`;
 
 const testBankBBSId = "BBS_0000000000090317";
 
@@ -30,7 +31,7 @@ export async function login(cookie: string, userId: string, password: string) {
         redirect: "manual"  // don't remove! need to distinguish login success
     });
 
-    return loginPage.status == 302; // if 200: login fail, if 302: success
+    return loginPage.status === 302; // if 200: login fail, if 302: success
 }
 
 function getLoginReqBody(userId: string, password: string) {
@@ -44,7 +45,7 @@ function getLoginReqBody(userId: string, password: string) {
 }
 
 function isValidResponse(res: Response) {
-    return res.headers.getSetCookie().length === 0;  // unauthorized requests will receive new JSESSION cookie
+    return res.headers.getSetCookie().length === 0;  // invalid requests will receive new JSESSION cookie
 }
 
 // need this call first for other requests to work. don't know why.
@@ -88,24 +89,114 @@ function getBoardListReqBody(count: number) {
 export function parseToIdList(boardList: HTMLElement) {
     const regex = /fnView\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/; // expected form: fnView("bbsId", "nttId")
 
-    return boardList.querySelectorAll(".samu")
-        .map(e => {
-            const onclickString = e.getAttribute("onclick") || "";
-            const match = onclickString.match(regex);
+    return boardList.querySelectorAll(".samu").map(e => {
+        const onclickString = e.getAttribute("onclick") || "";
+        const match = onclickString.match(regex);
 
-            return match ? match[2] : null; // only return nttId
-        });
+        return match?.at(2) ?? null; // only return nttId
+    });
 }
 
-export async function getBoardListCount(cookie: string) {
+export async function getBoardListCount(cookie: string) {   // count is string
     const boardList = await getBoardList(cookie);
-    if (!boardList) return null;
+    
+    return boardList
+        ?.querySelectorAll(".total").at(0)
+        ?.textContent.slice(2, -1);
+}
 
-    const totalElement = boardList.querySelectorAll(".total").at(0);
-    if (!totalElement) return null;
+export async function needsUpdate(cookie: string, latestNttId: string) {
+    const boardList = await getBoardList(cookie);
+    if (!boardList) return true;
 
-    const total = parseInt(totalElement.textContent.slice(2, -1));
-    if (!total) return null;
+    const idList = parseToIdList(boardList);
+    if (idList.length === 0) return true;
 
-    return total;
+    return idList[0] !== latestNttId;
+}
+
+export async function getBoardDetail(cookie: string, nttId: string) {
+    const boardDetail = await fetch(boardDetailURL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', // required to work
+            'Cookie': cookie,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: getBoardDetailReqBody(nttId),
+    });
+
+    if (!isValidResponse(boardDetail)) return null;
+
+    return parse(await boardDetail.text());
+}
+
+function getBoardDetailReqBody(nttId: string) {
+    return new URLSearchParams({
+        bbsId: testBankBBSId,
+        bbsTyCode: 'base',
+        cmntSe: 'N',
+        nttId: nttId    // this one has nttId
+    }).toString();
+}
+
+export function parseBoardDetailTitle(boardDetail: HTMLElement) {
+    return boardDetail
+        .getElementsByTagName("th")
+        .find(e => e.textContent.trim() === "제목")
+        ?.closest("tr")
+        ?.querySelector("td > div")
+        ?.textContent.trim() ?? null;
+}
+
+export function parseBoardDetailFiles(boardDetail: HTMLElement) {
+    const scriptText = boardDetail
+        .getElementsByTagName("script")
+        .find(e => e.textContent.includes("serverFileObj"))
+        ?.textContent ?? "";
+
+    // expected form (has to be in "name", "atchFileId", "fileSn" order):
+    // serverFileObj["name"] = "filename.txt"
+    // ...
+    // serverFileObj["atchFileId"] = "FILE_01"
+    // ...
+    // serverFileObj["fileSn"] = "1"
+
+    const regex = /serverFileObj\["name"\]\s*=\s*"([^"]*)";[\s\S]*?serverFileObj\["atchFileId"\]\s*=\s*"([^"]*)";\s*serverFileObj\["fileSn"\]\s*=\s*"([^"]*)";/g;
+    
+    return scriptText.matchAll(regex).map(match => { // length might not be as expected if regex fails
+        return { 
+            name: match[1], 
+            atchFileId: match[2], 
+            fileSn: match[3]
+        };
+    });
+}
+
+type File = {
+    name: string | undefined,
+    atchFileId: string | undefined,
+    fileSn: string | undefined
+}
+
+export async function getFileDataFromIdList(cookie: string, idList: string[]) {
+    const fileData = [];
+
+    for (const nttId of idList) {
+        const boardDetail = await getBoardDetail(cookie, nttId);
+        if (!boardDetail) return null;
+
+        fileData.push({
+            nttId: nttId,
+            title: parseBoardDetailTitle(boardDetail),
+            files: parseBoardDetailFiles(boardDetail).map(f => {
+                return { 
+                    name: f.name,
+                    url: fileDownloadURL(f) 
+                } 
+            })
+        });
+    }
+
+    return fileData;
 }

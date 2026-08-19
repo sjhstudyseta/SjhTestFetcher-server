@@ -4,6 +4,4 @@ package-lock.json
 *.d.ts
 *.d.ts.map
 *.js.map
-
-server.js
-fetcher-base.js
+*.js
