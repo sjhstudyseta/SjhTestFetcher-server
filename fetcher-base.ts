@@ -16,7 +16,7 @@ export async function getCookie() {
     return mainPage
         .headers
         .getSetCookie()
-        .map(e => e.split(";")[0])  // get cookie id, value: "id=value"
+        .map(e => e.split(";")[0])  // get cookie id, format: "id=value"
         .join("; ");
 }
 
@@ -87,7 +87,7 @@ function getBoardListReqBody(count: number) {
 }
 
 export function parseToIdList(boardList: HTMLElement) {
-    const regex = /fnView\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/; // expected form: fnView("bbsId", "nttId")
+    const regex = /fnView\(\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/; // expected form: fnView('bbsId', 'nttId')   // ' is not same as "!!!
 
     return boardList.querySelectorAll(".samu").map(e => {
         const onclickString = e.getAttribute("onclick") || "";
@@ -97,12 +97,16 @@ export function parseToIdList(boardList: HTMLElement) {
     });
 }
 
-export async function getBoardListCount(cookie: string) {   // count is string
+export async function getBoardListCount(cookie: string) {
     const boardList = await getBoardList(cookie);
     
-    return boardList
+    const strCount = boardList
         ?.querySelectorAll(".total").at(0)
-        ?.textContent.slice(2, -1);
+        ?.textContent.slice(2, -1) ?? "";
+
+    const count = parseInt(strCount);
+
+    return isNaN(count) ? null : count;
 }
 
 export async function needsUpdate(cookie: string, latestNttId: string) {
@@ -117,11 +121,11 @@ export async function needsUpdate(cookie: string, latestNttId: string) {
 
 export async function getBoardDetail(cookie: string, nttId: string) {
     const boardDetail = await fetch(boardDetailURL, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', // required to work
-            'Cookie': cookie,
-            'X-Requested-With': 'XMLHttpRequest'
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", // required to work
+            "Cookie": cookie,
+            "X-Requested-With": "XMLHttpRequest"
         },
         body: getBoardDetailReqBody(nttId),
     });
@@ -134,8 +138,8 @@ export async function getBoardDetail(cookie: string, nttId: string) {
 function getBoardDetailReqBody(nttId: string) {
     return new URLSearchParams({
         bbsId: testBankBBSId,
-        bbsTyCode: 'base',
-        cmntSe: 'N',
+        bbsTyCode: "base",
+        cmntSe: "N",
         nttId: nttId    // this one has nttId
     }).toString();
 }
@@ -162,27 +166,43 @@ export function parseBoardDetailFiles(boardDetail: HTMLElement) {
     // ...
     // serverFileObj["fileSn"] = "1"
 
+    // ' is not same as "!!!
+
     const regex = /serverFileObj\["name"\]\s*=\s*"([^"]*)";[\s\S]*?serverFileObj\["atchFileId"\]\s*=\s*"([^"]*)";\s*serverFileObj\["fileSn"\]\s*=\s*"([^"]*)";/g;
     
-    return scriptText.matchAll(regex).map(match => { // length might not be as expected if regex fails
-        return { 
-            name: match[1], 
-            atchFileId: match[2], 
-            fileSn: match[3]
+    return scriptText.matchAll(regex).map((match): File => { // length might not be as expected if regex fails
+        return {
+            name: match[1] ?? null,
+            atchFileId: match[2] ?? null,
+            fileSn: match[3] ?? null
         };
     });
 }
 
-type File = {
-    name: string | undefined,
-    atchFileId: string | undefined,
-    fileSn: string | undefined
+export type File = {
+    name: string | null,
+    atchFileId: string | null,
+    fileSn: string | null
 }
 
-export async function getFileDataFromIdList(cookie: string, idList: string[]) {
-    const fileData = [];
+export type FileData = {
+    nttId: string | null,
+    title: string | null,
+    files: { 
+        name: string | null,
+        url: string 
+    }[];
+}
+
+export async function getFileDataFromIdList(cookie: string, idList: (string | null)[]) {
+    const fileData: FileData[] = [];
 
     for (const nttId of idList) {
+        if (!nttId) {
+            fileData.push({ nttId: null, title: null, files: [] });
+            continue;
+        }
+
         const boardDetail = await getBoardDetail(cookie, nttId);
         if (!boardDetail) return null;
 
@@ -194,7 +214,7 @@ export async function getFileDataFromIdList(cookie: string, idList: string[]) {
                     name: f.name,
                     url: fileDownloadURL(f) 
                 } 
-            })
+            }).toArray()
         });
     }
 
