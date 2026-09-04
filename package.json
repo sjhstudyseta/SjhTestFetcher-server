@@ -13,9 +13,10 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "server.ts",
+  "main": "node ./dist/server.js",
   "scripts": {
-    "test": "node server.ts"
+    "test": "node ./dist/server.js",
+    "build": "tsc"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
@@ -25,7 +26,6 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.4.1",
-    "ts-node": "^10.9.2",
     "typescript": "^7.0.2"
   }
 }

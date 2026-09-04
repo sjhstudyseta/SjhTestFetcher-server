@@ -18,10 +18,6 @@ export async function getBoardListCount(cookie: string) {
     return await fetcher.getBoardListCount(cookie);
 }
 
-export async function needsUpdate(cookie: string, latestNttId: string) {
-    return await fetcher.needsUpdate(cookie, latestNttId);
-}
-
 async function fetchIdList(cookie: string, count: number) {
     if (count < 0) throw new Error(`Negative count isn't a thing silly! (${count})`);
 

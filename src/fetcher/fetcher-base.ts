@@ -153,6 +153,12 @@ export function parseBoardDetailTitle(boardDetail: HTMLElement) {
         ?.textContent.trim() ?? null;
 }
 
+export type File = {
+    name: string | null,
+    atchFileId: string | null,
+    fileSn: string | null
+}
+
 export function parseBoardDetailFiles(boardDetail: HTMLElement) {
     const scriptText = boardDetail
         .getElementsByTagName("script")
@@ -170,19 +176,13 @@ export function parseBoardDetailFiles(boardDetail: HTMLElement) {
 
     const regex = /serverFileObj\["name"\]\s*=\s*"([^"]*)";[\s\S]*?serverFileObj\["atchFileId"\]\s*=\s*"([^"]*)";\s*serverFileObj\["fileSn"\]\s*=\s*"([^"]*)";/g;
     
-    return scriptText.matchAll(regex).map((match): File => { // length might not be as expected if regex fails
+    return scriptText.matchAll(regex).toArray().map((match): File => { // length might not be as expected if regex fails
         return {
             name: match[1] ?? null,
             atchFileId: match[2] ?? null,
             fileSn: match[3] ?? null
         };
     });
-}
-
-export type File = {
-    name: string | null,
-    atchFileId: string | null,
-    fileSn: string | null
 }
 
 export type FileData = {
@@ -214,7 +214,7 @@ export async function getFileDataFromIdList(cookie: string, idList: (string | nu
                     name: f.name,
                     url: fileDownloadURL(f) 
                 } 
-            }).toArray()
+            })
         });
     }
 
