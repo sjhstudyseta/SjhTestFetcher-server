@@ -1,4 +1,5 @@
-import { HTMLElement, parse } from "node-html-parser"
+import { HTMLElement, parse } from "node-html-parser";
+import type { File, FileData } from './fetcher-types.js';
 
 const mainPageURL = "https://seoulsejong.sen.hs.kr";
 const loginURL = "https://seoulsejong.sen.hs.kr/dggb/cmm/actionLogin.do";
@@ -153,12 +154,6 @@ export function parseBoardDetailTitle(boardDetail: HTMLElement) {
         ?.textContent.trim() ?? null;
 }
 
-export type File = {
-    name: string | null,
-    atchFileId: string | null,
-    fileSn: string | null
-}
-
 export function parseBoardDetailFiles(boardDetail: HTMLElement) {
     const scriptText = boardDetail
         .getElementsByTagName("script")
@@ -183,15 +178,6 @@ export function parseBoardDetailFiles(boardDetail: HTMLElement) {
             fileSn: match[3] ?? null
         };
     });
-}
-
-export type FileData = {
-    nttId: string | null,
-    title: string | null,
-    files: { 
-        name: string | null,
-        url: string 
-    }[];
 }
 
 export async function getFileDataFromIdList(cookie: string, idList: (string | null)[]) {
