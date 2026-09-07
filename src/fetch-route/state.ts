@@ -1,3 +1,4 @@
+// server running state & cookie storage
 export type State = {
     priority: boolean,
     default: boolean,

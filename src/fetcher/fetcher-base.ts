@@ -1,3 +1,4 @@
+// base fetching logic
 import { HTMLElement, parse } from "node-html-parser";
 import type { File, FileData } from './fetcher-types.js';
 

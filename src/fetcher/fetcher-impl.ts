@@ -1,3 +1,4 @@
+// implementation for this server with error handling
 import * as fetcher from './fetcher-base.js';
 import type { FileData } from './fetcher-types.js';
 

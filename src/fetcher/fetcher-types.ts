@@ -1,4 +1,4 @@
-export type File = {
+export type File = { // only used in fetcher-base
     name: string | null,
     atchFileId: string | null,
     fileSn: string | null

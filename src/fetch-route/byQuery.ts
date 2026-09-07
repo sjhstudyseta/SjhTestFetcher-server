@@ -1,3 +1,4 @@
+// actions by query
 import * as fetcherImpl from '../fetcher/fetcher-impl.js';
 
 async function fetchFileData(cookie: string, nttId?: string, count?: number) {

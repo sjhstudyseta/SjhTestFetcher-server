@@ -1,3 +1,4 @@
+// app entry point, server -> fetch -> byQuery
 import express from 'express';
 import fetch from './fetch-route/fetch.js';
 import { PORT } from './util/secrets.js';
