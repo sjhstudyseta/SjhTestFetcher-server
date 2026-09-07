@@ -1,5 +1,10 @@
-import app from './app.js';
+import express from 'express';
+import fetch from './fetch-route/fetch.js';
 import { PORT } from './util/secrets.js';
+
+const app = express();
+
+app.get('/fetch', fetch);
 
 app.get('/', (req, res) => {
   res.send('Fetcher active! Try GET /fetch');

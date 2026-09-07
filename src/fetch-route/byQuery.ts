@@ -1,21 +1,15 @@
-import * as fetcherImpl from './fetcher/fetcher-impl.js';
-import type { FileData } from './fetcher/fetcher-types.js';
+import * as fetcherImpl from '../fetcher/fetcher-impl.js';
 
-export async function fetchFileData(cookie: string): Promise<FileData[]>;
-export async function fetchFileData(cookie: string, count: number): Promise<FileData[]>;
-
-export async function fetchFileData(cookie: string, count?: number) {
-    if (!count) return await noQuery(cookie);
-    else return await countQuery(cookie, count);
+async function fetchFileData(cookie: string, nttId?: string, count?: number) {
+    if (nttId) {
+        return count ? await afterCountQuery(cookie, nttId, count) : await afterQuery(cookie, nttId);
+    }
+    else {
+        return count ? await countQuery(cookie, count) : await noQuery(cookie);
+    }
 }
 
-export async function fetchFileDataAfter(cookie: string, nttId: string): Promise<FileData[]>
-export async function fetchFileDataAfter(cookie: string, nttId: string, count: number): Promise<FileData[]>
-
-export async function fetchFileDataAfter(cookie: string, nttId: string, count?: number) {
-    if (!count) return await afterQuery(cookie, nttId);
-    else return await afterCountQuery(cookie, nttId, count);
-}
+export default fetchFileData;
 
 async function noQuery(cookie: string) {
     const count = await fetcherImpl.getBoardListCount(cookie);
