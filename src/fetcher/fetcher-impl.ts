@@ -1,6 +1,5 @@
 // implementation for this server with error handling
 import * as fetcher from './fetcher-base.js';
-import type { FileData } from './fetcher-types.js';
 
 export async function setup(userId: string, password: string) {
     const cookie = await fetcher.getCookie();
@@ -55,12 +54,4 @@ export async function fetchIdListAfter(cookie: string, nttId: string) {
     idIndex = idIndex === -1 ? 0 : idIndex;
 
     return idList.toSpliced(idIndex);
-}
-
-export function exportJSON(fileData: FileData[]) {
-    return JSON.stringify({
-        date: new Date().toISOString(),
-        latestNttId: fileData[0]?.nttId ?? null,
-        data: fileData
-    }, null, 2);
 }
