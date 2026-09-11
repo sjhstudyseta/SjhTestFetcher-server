@@ -1,7 +1,7 @@
 {
   "name": "sjhtestfetcher-server",
   "version": "1.1.0",
-  "description": "`curl -H \"key:CORRECT_KEY\" \"https://sjhtestfetcher-server.onrender.com/fetch` ## Queries * `count`: amount of entries to get * `after`: get entries after nttId",
+  "description": "서울세종고 정기고사문제은행 시험지 다운로드 링크 생성 서버",
   "homepage": "https://github.com/sjhstudyseta/SjhTestFetcher-server#readme",
   "bugs": {
     "url": "https://github.com/sjhstudyseta/SjhTestFetcher-server/issues"
@@ -13,13 +13,19 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "server.js",
+  "main": "node ./dist/server.js",
   "scripts": {
-    "test": "node server.js"
+    "test": "node ./dist/server.js",
+    "build": "tsc"
   },
   "dependencies": {
-    "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "node-html-parser": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.4.1",
+    "typescript": "^7.0.2"
   }
 }
